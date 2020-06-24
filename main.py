@@ -1,44 +1,63 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture("768x576.avi")
+cap = cv2.VideoCapture("imput/768x576.avi")
 frame_width = int( cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
 frame_height =int( cap.get( cv2.CAP_PROP_FRAME_HEIGHT))
 
 fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
 
-out = cv2.VideoWriter("output.avi", fourcc, 5.0, (1280,720))
+out = cv2.VideoWriter("output/output.avi", fourcc, 5.0, (1280,720))
 
 ret, frame1 = cap.read()
 ret, frame2 = cap.read()
+
 print(frame1.shape)
 while cap.isOpened():
-    diff = cv2.absdiff(frame1, frame2)
-    gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5,5), 0)
-    _, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
-    dilated = cv2.dilate(thresh, None, iterations=3)
-    contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	cv2.imshow("FRAME 1", frame1)
+	cv2.imshow("FRAME 2", frame2)
+	diff = cv2.absdiff(frame1, frame2)
 
-    for contour in contours:
-        (x, y, w, h) = cv2.boundingRect(contour)
+	cv2.imshow("IMAGE_DIFERENCE", diff)
+	gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 
-        if cv2.contourArea(contour) < 900:
-            continue
-        cv2.rectangle(frame1, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        cv2.putText(frame1, "Status: {}".format('Movement'), (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
-                    1, (0, 0, 255), 3)
-    #cv2.drawContours(frame1, contours, -1, (0, 255, 0), 2)
+	cv2.imshow("IMAGE_DIFERENCE_GRAY", gray)
+	blur = cv2.GaussianBlur(gray, (5,5), 0)
 
-    image = cv2.resize(frame1, (1280,720))
-    out.write(image)
-    cv2.imshow("feed", frame1)
-    frame1 = frame2
-    ret, frame2 = cap.read()
+	cv2.imshow("IMAGE_DIFERENCE_BLUR", blur)
 
-    if cv2.waitKey(40) == 27:
-        break
+	_, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
+	cv2.imshow("IMAGE_DIFERENCE_THRESH", thresh)
+
+	dilated = cv2.dilate(thresh, None, iterations=3)
+
+	cv2.imshow("IMAGE_DIFERENCE_DILATED", dilated)
+	contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+	coutours_means = 0
+	for contour in contours:
+		coutours_means = coutours_means + cv2.contourArea(contour)
+	coutours_means = coutours_means//len(contours)
+	
+	for contour in contours:
+		(x, y, w, h) = cv2.boundingRect(contour)
+
+		if cv2.contourArea(contour) < coutours_means:
+			continue
+		cv2.rectangle(frame1, (x, y), (x+w, y+h), (0, 255, 0), 2)
+		cv2.putText(frame1, "Status: {}".format('Movement'), (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
+					1, (0, 0, 255), 3)
+	#cv2.drawContours(frame1, contours, -1, (0, 255, 0), 2)
+
+	image = cv2.resize(frame1, (1280,720))
+	out.write(image)
+	cv2.imshow("feed", frame1)
+	frame1 = frame2
+	ret, frame2 = cap.read()
+
+	if cv2.waitKey(40) == 27:
+		break
 
 cv2.destroyAllWindows()
 cap.release()
